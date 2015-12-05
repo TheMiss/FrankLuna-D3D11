@@ -3,7 +3,7 @@
 //
 
 #include "pch.h"
-#include "Game.h"
+#include "d3dApp.h"
 #include "Test.h"
 
 using namespace DirectX;
@@ -11,7 +11,7 @@ using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
 // Constructor.
-Game::Game() :
+D3DApp::D3DApp() :
 m_window(0),
 m_outputWidth(800),
 m_outputHeight(600),
@@ -22,7 +22,7 @@ m_featureLevel(D3D_FEATURE_LEVEL_9_1)
 }
 
 // Initialize the Direct3D resources required to run.
-void Game::Initialize(HWND window, int width, int height)
+void D3DApp::Initialize(HWND window, int width, int height)
 {
 	m_window = window;
 	m_outputWidth = std::max(width, 1);
@@ -41,7 +41,7 @@ void Game::Initialize(HWND window, int width, int height)
 }
 
 // Executes basic game loop.
-void Game::Tick()
+void D3DApp::Tick()
 {
 	m_timer.Tick([&]()
 	{
@@ -52,7 +52,7 @@ void Game::Tick()
 }
 
 // Updates the world
-void Game::Update(DX::StepTimer const& timer)
+void D3DApp::Update(DX::StepTimer const& timer)
 {
 	float elapsedTime = float(timer.GetElapsedSeconds());
 
@@ -61,7 +61,7 @@ void Game::Update(DX::StepTimer const& timer)
 }
 
 // Draws the scene
-void Game::Render()
+void D3DApp::Render()
 {
 	// Don't try to render anything before the first Update.
 	if (m_timer.GetFrameCount() == 0)
@@ -101,7 +101,7 @@ void Game::Render()
 }
 
 // Helper method to clear the backbuffers
-void Game::Clear()
+void D3DApp::Clear()
 {
 	// Clear the views
 	m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::CornflowerBlue);
@@ -114,7 +114,7 @@ void Game::Clear()
 }
 
 // Presents the backbuffer contents to the screen
-void Game::Present()
+void D3DApp::Present()
 {
 	// The first argument instructs DXGI to block until VSync, putting the application
 	// to sleep until the next VSync. This ensures we don't waste any cycles rendering
@@ -133,29 +133,29 @@ void Game::Present()
 }
 
 // Message handlers
-void Game::OnActivated()
+void D3DApp::OnActivated()
 {
 	// TODO: Game is becoming active window
 }
 
-void Game::OnDeactivated()
+void D3DApp::OnDeactivated()
 {
 	// TODO: Game is becoming background window
 }
 
-void Game::OnSuspending()
+void D3DApp::OnSuspending()
 {
 	// TODO: Game is being power-suspended (or minimized)
 }
 
-void Game::OnResuming()
+void D3DApp::OnResuming()
 {
 	m_timer.ResetElapsedTime();
 
 	// TODO: Game is being power-resumed (or returning from minimize)
 }
 
-void Game::OnWindowSizeChanged(int width, int height)
+void D3DApp::OnWindowSizeChanged(int width, int height)
 {
 	m_outputWidth = std::max(width, 1);
 	m_outputHeight = std::max(height, 1);
@@ -166,7 +166,7 @@ void Game::OnWindowSizeChanged(int width, int height)
 }
 
 // Properties
-void Game::GetDefaultSize(int& width, int& height) const
+void D3DApp::GetDefaultSize(int& width, int& height) const
 {
 	// TODO: Change to desired default window size (note minimum size is 320x200)
 	width = 800;
@@ -174,7 +174,7 @@ void Game::GetDefaultSize(int& width, int& height) const
 }
 
 // These are the resources that depend on the device.
-void Game::CreateDevice()
+void D3DApp::CreateDevice()
 {
 	UINT creationFlags = 0;
 
@@ -280,7 +280,7 @@ void Game::CreateDevice()
 }
 
 // Allocate all memory resources that change on a window SizeChanged event.
-void Game::CreateResources()
+void D3DApp::CreateResources()
 {
 	// Clear the previous window size specific context.
 	ID3D11RenderTargetView* nullViews[] = { nullptr };
@@ -402,7 +402,7 @@ void Game::CreateResources()
 	m_fullscreenRect.bottom = backBufferHeight;
 }
 
-void Game::OnDeviceLost()
+void D3DApp::OnDeviceLost()
 {
 	// TODO: Add Direct3D resource cleanup here
 	m_texture.Reset();
