@@ -23,6 +23,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "08-Using-advanced-shaders",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "11-Writing-custom-shaders", "11-Writing-custom-shaders\11-Writing-custom-shaders.vcxproj", "{310E94A2-C4A1-4CEF-8686-96FF2AF1D26D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Chapter 6 Drawing in Direct3D", "Chapter 6 Drawing in Direct3D", "{A958EF6B-B994-4B87-AEE6-DB95BF378B4F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Box", "Chapter 6 Drawing in Direct3D\Box\Box.vcxproj", "{9182BC36-42F2-4947-8BE0-5372FE6A02B8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -103,6 +107,14 @@ Global
 		{310E94A2-C4A1-4CEF-8686-96FF2AF1D26D}.Release|Win32.Build.0 = Release|Win32
 		{310E94A2-C4A1-4CEF-8686-96FF2AF1D26D}.Release|x64.ActiveCfg = Release|x64
 		{310E94A2-C4A1-4CEF-8686-96FF2AF1D26D}.Release|x64.Build.0 = Release|x64
+		{9182BC36-42F2-4947-8BE0-5372FE6A02B8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9182BC36-42F2-4947-8BE0-5372FE6A02B8}.Debug|Win32.Build.0 = Debug|Win32
+		{9182BC36-42F2-4947-8BE0-5372FE6A02B8}.Debug|x64.ActiveCfg = Debug|x64
+		{9182BC36-42F2-4947-8BE0-5372FE6A02B8}.Debug|x64.Build.0 = Debug|x64
+		{9182BC36-42F2-4947-8BE0-5372FE6A02B8}.Release|Win32.ActiveCfg = Release|Win32
+		{9182BC36-42F2-4947-8BE0-5372FE6A02B8}.Release|Win32.Build.0 = Release|Win32
+		{9182BC36-42F2-4947-8BE0-5372FE6A02B8}.Release|x64.ActiveCfg = Release|x64
+		{9182BC36-42F2-4947-8BE0-5372FE6A02B8}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -115,5 +127,6 @@ Global
 		{02ED71A8-FBEA-4AE5-B00A-09CF8A348125} = {E046995E-D108-4B39-BAA2-FC9B3EFCAEE7}
 		{DA799085-FB23-4105-93F5-2CEB1D5D2352} = {E046995E-D108-4B39-BAA2-FC9B3EFCAEE7}
 		{310E94A2-C4A1-4CEF-8686-96FF2AF1D26D} = {E046995E-D108-4B39-BAA2-FC9B3EFCAEE7}
+		{9182BC36-42F2-4947-8BE0-5372FE6A02B8} = {A958EF6B-B994-4B87-AEE6-DB95BF378B4F}
 	EndGlobalSection
 EndGlobal
