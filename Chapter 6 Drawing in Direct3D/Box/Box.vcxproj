@@ -85,7 +85,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)\DirectXTK\Inc;$(SolutionDir)\Common\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\DirectXTK\Inc;$(SolutionDir)\Common\;$(ProjectDir)Box\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -100,7 +100,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)\DirectXTK\Inc;$(SolutionDir)\Common\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\DirectXTK\Inc;$(SolutionDir)\Common\;$(ProjectDir)Box\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -117,7 +117,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)\DirectXTK\Inc;$(SolutionDir)\Common\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\DirectXTK\Inc;$(SolutionDir)\Common\;$(ProjectDir)Box\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -136,7 +136,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(SolutionDir)\DirectXTK\Inc;$(SolutionDir)\Common\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\DirectXTK\Inc;$(SolutionDir)\Common\;$(ProjectDir)Box\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -147,19 +147,29 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Common\Camera.h" />
     <ClInclude Include="..\..\Common\d3dApp.h" />
+    <ClInclude Include="..\..\Common\d3dUtil.h" />
     <ClInclude Include="..\..\Common\GameTimer.h" />
+    <ClInclude Include="..\..\Common\GeometryGenerator.h" />
+    <ClInclude Include="..\..\Common\LightHelper.h" />
+    <ClInclude Include="..\..\Common\MathHelper.h" />
     <ClInclude Include="..\..\Common\StepTimer.h" />
-    <ClInclude Include="..\..\Common\Test.h" />
-    <ClInclude Include="Game.h" />
+    <ClInclude Include="..\..\Common\TextureMgr.h" />
+    <ClInclude Include="..\..\Common\Waves.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Common\Camera.cpp" />
     <ClCompile Include="..\..\Common\d3dApp.cpp" />
+    <ClCompile Include="..\..\Common\d3dUtil.cpp" />
     <ClCompile Include="..\..\Common\GameTimer.cpp" />
-    <ClCompile Include="..\..\Common\Test.cpp" />
-    <ClCompile Include="Game.cpp" />
-    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="..\..\Common\GeometryGenerator.cpp" />
+    <ClCompile Include="..\..\Common\LightHelper.cpp" />
+    <ClCompile Include="..\..\Common\MathHelper.cpp" />
+    <ClCompile Include="..\..\Common\TextureMgr.cpp" />
+    <ClCompile Include="..\..\Common\Waves.cpp" />
+    <ClCompile Include="BoxDemo.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

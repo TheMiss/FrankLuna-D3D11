@@ -42,8 +42,6 @@
 #include "VertexTypes.h"
 #include "WICTextureLoader.h"
 
-#include "Test.h"
-
 namespace DX
 {
     inline void ThrowIfFailed(HRESULT hr)

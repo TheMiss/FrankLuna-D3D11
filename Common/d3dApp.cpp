@@ -1,179 +1,304 @@
-//
-// Game.cpp -
-//
+//***************************************************************************************
+// d3dApp.cpp by Frank Luna (C) 2011 All Rights Reserved.
+//***************************************************************************************
 
 #include "pch.h"
 #include "d3dApp.h"
-#include "Test.h"
+#include <WindowsX.h>
+#include <sstream>
 
 using namespace DirectX;
 
 using Microsoft::WRL::ComPtr;
 
-// Constructor.
-D3DApp::D3DApp() :
-m_window(0),
-m_outputWidth(800),
-m_outputHeight(600),
-m_featureLevel(D3D_FEATURE_LEVEL_9_1)
+namespace
 {
-	SuperNamespace::Test test;
-	test.Yo();
+	// This is just used to forward Windows messages from a global window
+	// procedure to our member function window procedure because we cannot
+	// assign a member function to WNDCLASS::lpfnWndProc.
+	D3DApp* gd3dApp = 0;
 }
 
-// Initialize the Direct3D resources required to run.
-void D3DApp::Initialize(HWND window, int width, int height)
+LRESULT CALLBACK
+MainWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	m_window = window;
-	m_outputWidth = std::max(width, 1);
-	m_outputHeight = std::max(height, 1);
-
-	CreateDevice();
-
-	CreateResources();
-
-	// TODO: Change the timer settings if you want something other than the default variable timestep mode.
-	// e.g. for 60 FPS fixed timestep update logic, call:
-	/*
-	m_timer.SetFixedTimeStep(true);
-	m_timer.SetTargetElapsedSeconds(1.0 / 60);
-	*/
+	// Forward hwnd on because we can get messages (e.g., WM_CREATE)
+	// before CreateWindow returns, and thus before mhMainWnd is valid.
+	return gd3dApp->MsgProc(hwnd, msg, wParam, lParam);
 }
 
-// Executes basic game loop.
-void D3DApp::Tick()
+D3DApp::D3DApp(HINSTANCE hInstance)
+	: mhAppInst(hInstance),
+	mMainWndCaption(L"D3D11 Application"),
+	md3dDriverType(D3D_DRIVER_TYPE_HARDWARE),
+	mClientWidth(800),
+	mClientHeight(600),
+	mEnable4xMsaa(false),
+	mhMainWnd(0),
+	mAppPaused(false),
+	mMinimized(false),
+	mMaximized(false),
+	mResizing(false),
+	m4xMsaaQuality(0),
+	mFeatureLevel(D3D_FEATURE_LEVEL_9_1)
 {
-	m_timer.Tick([&]()
+	// Get a pointer to the application object so we can forward 
+	// Windows messages to the object's window procedure through
+	// the global window procedure.
+	gd3dApp = this;
+}
+
+D3DApp::~D3DApp()
+{
+	
+}
+
+HINSTANCE D3DApp::AppInst()const
+{
+	return mhAppInst;
+}
+
+HWND D3DApp::MainWnd()const
+{
+	return mhMainWnd;
+}
+
+float D3DApp::AspectRatio()const
+{
+	return static_cast<float>(mClientWidth) / mClientHeight;
+}
+
+int D3DApp::Run()
+{
+	MSG msg = { 0 };
+
+	mTimer.Reset();
+
+	while (msg.message != WM_QUIT)
 	{
-		Update(m_timer);
-	});
+		// If there are Window messages then process them.
+		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		// Otherwise, do animation/game stuff.
+		else
+		{
+			mTimer.Tick();
 
-	Render();
-}
-
-// Updates the world
-void D3DApp::Update(DX::StepTimer const& timer)
-{
-	float elapsedTime = float(timer.GetElapsedSeconds());
-
-	// TODO: Add your game logic here
-	elapsedTime;
-}
-
-// Draws the scene
-void D3DApp::Render()
-{
-	// Don't try to render anything before the first Update.
-	if (m_timer.GetFrameCount() == 0)
-		return;
-
-	Clear();
-
-	// TODO: Add your rendering code here
-
-	float time = (float)m_timer.GetTotalSeconds();
-
-	//m_spriteBatch->Begin(SpriteSortMode_Deferred, m_states->NonPremultiplied());
-	/*m_spriteBatch->Begin();
-
-	m_spriteBatch->Draw(m_texture.Get(), m_screenPos, nullptr, Colors::Yellow, cosf(time) * 4.0f, m_origin, cosf(time) + 2.0f);
-
-	m_spriteBatch->End();*/
-
-	/*m_spriteBatch->Begin(SpriteSortMode_Deferred, nullptr, m_states->LinearWrap());
-
-	m_spriteBatch->Draw(m_texture.Get(), m_screenPos, &m_tileRect, Colors::White,
-	0.f, m_origin);
-
-	m_spriteBatch->End();*/
-
-	m_spriteBatch->Begin();
-
-	m_spriteBatch->Draw(m_background.Get(), m_fullscreenRect);
-
-	m_spriteBatch->Draw(m_texture.Get(), m_screenPos, nullptr, Colors::White,
-		0.f, m_origin);
-
-	m_spriteBatch->End();
-
-
-	Present();
-}
-
-// Helper method to clear the backbuffers
-void D3DApp::Clear()
-{
-	// Clear the views
-	m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::CornflowerBlue);
-	m_d3dContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-	m_d3dContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
-
-	CD3D11_VIEWPORT viewPort(0.0f, 0.0f, static_cast<float>(m_outputWidth), static_cast<float>(m_outputHeight));
-	m_d3dContext->RSSetViewports(1, &viewPort);
-}
-
-// Presents the backbuffer contents to the screen
-void D3DApp::Present()
-{
-	// The first argument instructs DXGI to block until VSync, putting the application
-	// to sleep until the next VSync. This ensures we don't waste any cycles rendering
-	// frames that will never be displayed to the screen.
-	HRESULT hr = m_swapChain->Present(1, 0);
-
-	// If the device was reset we must completely reinitialize the renderer.
-	if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
-	{
-		OnDeviceLost();
+			if (!mAppPaused)
+			{
+				CalculateFrameStats();
+				UpdateScene(mTimer.DeltaTime());
+				DrawScene();
+			}
+			else
+			{
+				Sleep(100);
+			}
+		}
 	}
-	else
-	{
-		DX::ThrowIfFailed(hr);
-	}
+
+	return (int)msg.wParam;
 }
 
-// Message handlers
-void D3DApp::OnActivated()
+bool D3DApp::Init()
 {
-	// TODO: Game is becoming active window
+	if (!InitMainWindow())
+		return false;
+
+	if (!InitDirect3D())
+		return false;
+
+	return true;
 }
 
-void D3DApp::OnDeactivated()
+void D3DApp::OnResize()
 {
-	// TODO: Game is becoming background window
-}
-
-void D3DApp::OnSuspending()
-{
-	// TODO: Game is being power-suspended (or minimized)
-}
-
-void D3DApp::OnResuming()
-{
-	m_timer.ResetElapsedTime();
-
-	// TODO: Game is being power-resumed (or returning from minimize)
-}
-
-void D3DApp::OnWindowSizeChanged(int width, int height)
-{
-	m_outputWidth = std::max(width, 1);
-	m_outputHeight = std::max(height, 1);
-
 	CreateResources();
 
 	// TODO: Game window is being resized
 }
 
-// Properties
-void D3DApp::GetDefaultSize(int& width, int& height) const
+LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	// TODO: Change to desired default window size (note minimum size is 320x200)
-	width = 800;
-	height = 600;
+	switch (msg)
+	{
+		// WM_ACTIVATE is sent when the window is activated or deactivated.  
+		// We pause the game when the window is deactivated and unpause it 
+		// when it becomes active.  
+	case WM_ACTIVATE:
+		if (LOWORD(wParam) == WA_INACTIVE)
+		{
+			mAppPaused = true;
+			mTimer.Stop();
+		}
+		else
+		{
+			mAppPaused = false;
+			mTimer.Start();
+		}
+		return 0;
+
+		// WM_SIZE is sent when the user resizes the window.  
+	case WM_SIZE:
+		// Save the new client area dimensions.
+		mClientWidth = LOWORD(lParam);
+		mClientHeight = HIWORD(lParam);
+		if (md3dDevice)
+		{
+			if (wParam == SIZE_MINIMIZED)
+			{
+				mAppPaused = true;
+				mMinimized = true;
+				mMaximized = false;
+			}
+			else if (wParam == SIZE_MAXIMIZED)
+			{
+				mAppPaused = false;
+				mMinimized = false;
+				mMaximized = true;
+				OnResize();
+			}
+			else if (wParam == SIZE_RESTORED)
+			{
+
+				// Restoring from minimized state?
+				if (mMinimized)
+				{
+					mAppPaused = false;
+					mMinimized = false;
+					OnResize();
+				}
+
+				// Restoring from maximized state?
+				else if (mMaximized)
+				{
+					mAppPaused = false;
+					mMaximized = false;
+					OnResize();
+				}
+				else if (mResizing)
+				{
+					// If user is dragging the resize bars, we do not resize 
+					// the buffers here because as the user continuously 
+					// drags the resize bars, a stream of WM_SIZE messages are
+					// sent to the window, and it would be pointless (and slow)
+					// to resize for each WM_SIZE message received from dragging
+					// the resize bars.  So instead, we reset after the user is 
+					// done resizing the window and releases the resize bars, which 
+					// sends a WM_EXITSIZEMOVE message.
+				}
+				else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
+				{
+					OnResize();
+				}
+			}
+		}
+		return 0;
+
+		// WM_EXITSIZEMOVE is sent when the user grabs the resize bars.
+	case WM_ENTERSIZEMOVE:
+		mAppPaused = true;
+		mResizing = true;
+		mTimer.Stop();
+		return 0;
+
+		// WM_EXITSIZEMOVE is sent when the user releases the resize bars.
+		// Here we reset everything based on the new window dimensions.
+	case WM_EXITSIZEMOVE:
+		mAppPaused = false;
+		mResizing = false;
+		mTimer.Start();
+		OnResize();
+		return 0;
+
+		// WM_DESTROY is sent when the window is being destroyed.
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+
+		// The WM_MENUCHAR message is sent when a menu is active and the user presses 
+		// a key that does not correspond to any mnemonic or accelerator key. 
+	case WM_MENUCHAR:
+		// Don't beep when we alt-enter.
+		return MAKELRESULT(0, MNC_CLOSE);
+
+		// Catch this message so to prevent the window from becoming too small.
+	case WM_GETMINMAXINFO:
+		((MINMAXINFO*)lParam)->ptMinTrackSize.x = 200;
+		((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200;
+		return 0;
+
+	case WM_LBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+		OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		return 0;
+	case WM_LBUTTONUP:
+	case WM_MBUTTONUP:
+	case WM_RBUTTONUP:
+		OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		return 0;
+	case WM_MOUSEMOVE:
+		OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		return 0;
+	}
+
+	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-// These are the resources that depend on the device.
+
+bool D3DApp::InitMainWindow()
+{
+	WNDCLASS wc;
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+	wc.lpfnWndProc = MainWndProc;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = mhAppInst;
+	wc.hIcon = LoadIcon(0, IDI_APPLICATION);
+	wc.hCursor = LoadCursor(0, IDC_ARROW);
+	wc.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
+	wc.lpszMenuName = 0;
+	wc.lpszClassName = L"D3DWndClassName";
+
+	if (!RegisterClass(&wc))
+	{
+		MessageBox(0, L"RegisterClass Failed.", 0, 0);
+		return false;
+	}
+
+	// Compute window rectangle dimensions based on requested client area dimensions.
+	RECT R = { 0, 0, mClientWidth, mClientHeight };
+	AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
+	int width = R.right - R.left;
+	int height = R.bottom - R.top;
+
+	mhMainWnd = CreateWindow(L"D3DWndClassName", mMainWndCaption.c_str(),
+		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, mhAppInst, 0);
+	if (!mhMainWnd)
+	{
+		MessageBox(0, L"CreateWindow Failed.", 0, 0);
+		return false;
+	}
+
+	ShowWindow(mhMainWnd, SW_SHOW);
+	UpdateWindow(mhMainWnd);
+
+	return true;
+}
+
+bool D3DApp::InitDirect3D()
+{
+	CreateDevice();
+	CreateResources();
+
+	return true;
+}
+
+
 void D3DApp::CreateDevice()
 {
 	UINT creationFlags = 0;
@@ -203,9 +328,9 @@ void D3DApp::CreateDevice()
 		featureLevels,                          // list of feature levels this app can support
 		_countof(featureLevels),                // number of entries in above list
 		D3D11_SDK_VERSION,                      // always set this to D3D11_SDK_VERSION
-		m_d3dDevice.ReleaseAndGetAddressOf(),   // returns the Direct3D device created
-		&m_featureLevel,                        // returns feature level of device created
-		m_d3dContext.ReleaseAndGetAddressOf()   // returns the device immediate context
+		md3dDevice.ReleaseAndGetAddressOf(),   // returns the Direct3D device created
+		&mFeatureLevel,                        // returns feature level of device created
+		md3dImmediateContext.ReleaseAndGetAddressOf()   // returns the device immediate context
 		);
 
 	if (hr == E_INVALIDARG)
@@ -213,15 +338,15 @@ void D3DApp::CreateDevice()
 		// DirectX 11.0 platforms will not recognize D3D_FEATURE_LEVEL_11_1 so we need to retry without it
 		hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr,
 			creationFlags, &featureLevels[1], _countof(featureLevels) - 1,
-			D3D11_SDK_VERSION, m_d3dDevice.ReleaseAndGetAddressOf(),
-			&m_featureLevel, m_d3dContext.ReleaseAndGetAddressOf());
+			D3D11_SDK_VERSION, md3dDevice.ReleaseAndGetAddressOf(),
+			&mFeatureLevel, md3dImmediateContext.ReleaseAndGetAddressOf());
 	}
 
 	DX::ThrowIfFailed(hr);
 
 #ifndef NDEBUG
 	ComPtr<ID3D11Debug> d3dDebug;
-	hr = m_d3dDevice.As(&d3dDebug);
+	hr = md3dDevice.As(&d3dDebug);
 	if (SUCCEEDED(hr))
 	{
 		ComPtr<ID3D11InfoQueue> d3dInfoQueue;
@@ -247,57 +372,33 @@ void D3DApp::CreateDevice()
 #endif
 
 	// DirectX 11.1 if present
-	hr = m_d3dDevice.As(&m_d3dDevice1);
+	hr = md3dDevice.As(&md3dDevice1);
 	if (SUCCEEDED(hr))
-		(void)m_d3dContext.As(&m_d3dContext1);
+		(void)md3dImmediateContext.As(&md3dImmediateContext1);
 
-	// TODO: Initialize device dependent objects here (independent of window size)
 
-	m_spriteBatch.reset(new SpriteBatch(m_d3dContext.Get()));
 
-	ComPtr<ID3D11Resource> resource;
-	/*DX::ThrowIfFailed(CreateWICTextureFromFile(m_d3dDevice.Get(), L"cat.png", resource.GetAddressOf(), m_texture.ReleaseAndGetAddressOf()));*/
-	DX::ThrowIfFailed(CreateDDSTextureFromFile(m_d3dDevice.Get(), L"cat.dds", resource.GetAddressOf(), m_texture.ReleaseAndGetAddressOf()));
-
-	ComPtr<ID3D11Texture2D> cat;
-	DX::ThrowIfFailed(resource.As(&cat));
-	resource.As(&cat);
-
-	CD3D11_TEXTURE2D_DESC catDesc;
-	cat->GetDesc(&catDesc);
-
-	m_origin.x = float(catDesc.Width / 2.0f);
-	m_origin.y = float(catDesc.Height / 2.0f);
-
-	m_tileRect.left = catDesc.Width * 2;
-	m_tileRect.right = catDesc.Width * 6;
-	m_tileRect.top = catDesc.Height * 2;
-	m_tileRect.bottom = catDesc.Height * 6;
-
-	DX::ThrowIfFailed(CreateWICTextureFromFile(m_d3dDevice.Get(), L"sunset.jpg", nullptr, m_background.ReleaseAndGetAddressOf()));
-
-	m_states.reset(new CommonStates(m_d3dDevice.Get()));
 }
 
-// Allocate all memory resources that change on a window SizeChanged event.
+
 void D3DApp::CreateResources()
 {
 	// Clear the previous window size specific context.
 	ID3D11RenderTargetView* nullViews[] = { nullptr };
-	m_d3dContext->OMSetRenderTargets(_countof(nullViews), nullViews, nullptr);
-	m_renderTargetView.Reset();
-	m_depthStencilView.Reset();
-	m_d3dContext->Flush();
+	md3dImmediateContext->OMSetRenderTargets(_countof(nullViews), nullViews, nullptr);
+	mRenderTargetView.Reset();
+	mDepthStencilView.Reset();
+	md3dImmediateContext->Flush();
 
-	UINT backBufferWidth = static_cast<UINT>(m_outputWidth);
-	UINT backBufferHeight = static_cast<UINT>(m_outputHeight);
+	UINT backBufferWidth = static_cast<UINT>(mClientWidth);
+	UINT backBufferHeight = static_cast<UINT>(mClientHeight);
 	DXGI_FORMAT backBufferFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
 	DXGI_FORMAT depthBufferFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	// If the swap chain already exists, resize it, otherwise create one.
-	if (m_swapChain)
+	if (mSwapChain)
 	{
-		HRESULT hr = m_swapChain->ResizeBuffers(2, backBufferWidth, backBufferHeight, backBufferFormat, 0);
+		HRESULT hr = mSwapChain->ResizeBuffers(2, backBufferWidth, backBufferHeight, backBufferFormat, 0);
 
 		if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
 		{
@@ -317,7 +418,7 @@ void D3DApp::CreateResources()
 	{
 		// First, retrieve the underlying DXGI Device from the D3D Device
 		ComPtr<IDXGIDevice1> dxgiDevice;
-		DX::ThrowIfFailed(m_d3dDevice.As(&dxgiDevice));
+		DX::ThrowIfFailed(md3dDevice.As(&dxgiDevice));
 
 		// Identify the physical adapter (GPU or card) this device is running on.
 		ComPtr<IDXGIAdapter> dxgiAdapter;
@@ -348,11 +449,11 @@ void D3DApp::CreateResources()
 
 			// Create a SwapChain from a Win32 window.
 			DX::ThrowIfFailed(dxgiFactory2->CreateSwapChainForHwnd(
-				m_d3dDevice.Get(), m_window, &swapChainDesc,
+				md3dDevice.Get(), mhMainWnd, &swapChainDesc,
 				&fsSwapChainDesc,
-				nullptr, m_swapChain1.ReleaseAndGetAddressOf()));
+				nullptr, mSwapChain1.ReleaseAndGetAddressOf()));
 
-			m_swapChain1.As(&m_swapChain);
+			mSwapChain1.As(&mSwapChain);
 		}
 		else
 		{
@@ -362,65 +463,118 @@ void D3DApp::CreateResources()
 			swapChainDesc.BufferDesc.Height = backBufferHeight;
 			swapChainDesc.BufferDesc.Format = backBufferFormat;
 			swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-			swapChainDesc.OutputWindow = m_window;
+			swapChainDesc.OutputWindow = mhMainWnd;
 			swapChainDesc.SampleDesc.Count = 1;
 			swapChainDesc.SampleDesc.Quality = 0;
 			swapChainDesc.Windowed = TRUE;
 
-			DX::ThrowIfFailed(dxgiFactory->CreateSwapChain(m_d3dDevice.Get(), &swapChainDesc, m_swapChain.ReleaseAndGetAddressOf()));
+			DX::ThrowIfFailed(dxgiFactory->CreateSwapChain(md3dDevice.Get(), &swapChainDesc, mSwapChain.ReleaseAndGetAddressOf()));
 		}
 
 		// This template does not support 'full-screen' mode and prevents the ALT+ENTER shortcut from working
-		dxgiFactory->MakeWindowAssociation(m_window, DXGI_MWA_NO_ALT_ENTER);
+		dxgiFactory->MakeWindowAssociation(mhMainWnd, DXGI_MWA_NO_ALT_ENTER);
 	}
 
 	// Obtain the backbuffer for this window which will be the final 3D rendertarget.
 	ComPtr<ID3D11Texture2D> backBuffer;
-	DX::ThrowIfFailed(m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backBuffer));
+	DX::ThrowIfFailed(mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backBuffer));
 
 	// Create a view interface on the rendertarget to use on bind.
-	DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, m_renderTargetView.ReleaseAndGetAddressOf()));
+	DX::ThrowIfFailed(md3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, mRenderTargetView.ReleaseAndGetAddressOf()));
 
 	// Allocate a 2-D surface as the depth/stencil buffer and
 	// create a DepthStencil view on this surface to use on bind.
 	CD3D11_TEXTURE2D_DESC depthStencilDesc(depthBufferFormat, backBufferWidth, backBufferHeight, 1, 1, D3D11_BIND_DEPTH_STENCIL);
 
 	ComPtr<ID3D11Texture2D> depthStencil;
-	DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, depthStencil.GetAddressOf()));
+	DX::ThrowIfFailed(md3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, depthStencil.GetAddressOf()));
 
 	CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
-	DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
+	DX::ThrowIfFailed(md3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, mDepthStencilView.ReleaseAndGetAddressOf()));
 
 	// TODO: Initialize windows-size dependent objects here
+}
 
-	m_screenPos.x = backBufferWidth / 2.0f;
-	m_screenPos.y = backBufferHeight / 2.0f;
+void D3DApp::CalculateFrameStats()
+{
+	// Code computes the average frames per second, and also the 
+	// average time it takes to render one frame.  These stats 
+	// are appended to the window caption bar.
 
-	m_fullscreenRect.left = 0;
-	m_fullscreenRect.top = 0;
-	m_fullscreenRect.right = backBufferWidth;
-	m_fullscreenRect.bottom = backBufferHeight;
+	static int frameCnt = 0;
+	static float timeElapsed = 0.0f;
+
+	frameCnt++;
+
+	// Compute averages over one second period.
+	if ((mTimer.TotalTime() - timeElapsed) >= 1.0f)
+	{
+		float fps = (float)frameCnt; // fps = frameCnt / 1
+		float mspf = 1000.0f / fps;
+
+		std::wostringstream outs;
+		outs.precision(6);
+		outs << mMainWndCaption << L"    "
+			<< L"FPS: " << fps << L"    "
+			<< L"Frame Time: " << mspf << L" (ms)";
+		SetWindowText(mhMainWnd, outs.str().c_str());
+
+		// Reset for next average.
+		frameCnt = 0;
+		timeElapsed += 1.0f;
+	}
 }
 
 void D3DApp::OnDeviceLost()
 {
 	// TODO: Add Direct3D resource cleanup here
-	m_texture.Reset();
-	m_spriteBatch.reset();
-	m_states.reset();
-	m_background.Reset();
 
-	m_depthStencil.Reset();
-	m_depthStencilView.Reset();
-	m_renderTargetView.Reset();
-	m_swapChain1.Reset();
-	m_swapChain.Reset();
-	m_d3dContext1.Reset();
-	m_d3dContext.Reset();
-	m_d3dDevice1.Reset();
-	m_d3dDevice.Reset();
+
+	mDepthStencil.Reset();
+	mDepthStencilView.Reset();
+	mRenderTargetView.Reset();
+	mSwapChain1.Reset();
+	mSwapChain.Reset();
+	md3dImmediateContext1.Reset();
+	md3dImmediateContext.Reset();
+	md3dDevice1.Reset();
+	md3dDevice.Reset();
 
 	CreateDevice();
 
 	CreateResources();
 }
+
+void D3DApp::Clear(const FLOAT color[4])
+{
+	// Clear the views
+	md3dImmediateContext->ClearRenderTargetView(mRenderTargetView.Get(), color);
+	md3dImmediateContext->ClearDepthStencilView(mDepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+	md3dImmediateContext->OMSetRenderTargets(1, mRenderTargetView.GetAddressOf(), mDepthStencilView.Get());
+
+	CD3D11_VIEWPORT viewPort(0.0f, 0.0f, static_cast<float>(mClientWidth), static_cast<float>(mClientHeight));
+	md3dImmediateContext->RSSetViewports(1, &viewPort);
+}
+
+// Presents the backbuffer contents to the screen
+void D3DApp::Present()
+{
+	// The first argument instructs DXGI to block until VSync, putting the application
+	// to sleep until the next VSync. This ensures we don't waste any cycles rendering
+	// frames that will never be displayed to the screen.
+	HRESULT hr = mSwapChain->Present(1, 0);
+
+	// If the device was reset we must completely reinitialize the renderer.
+	if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+	{
+		OnDeviceLost();
+	}
+	else
+	{
+		DX::ThrowIfFailed(hr);
+	}
+}
+
+
+

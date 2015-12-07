@@ -11,80 +11,103 @@
 #ifndef D3DAPP_H
 #define D3DAPP_H
 
-#pragma once
+//#pragma once
+
+//#include "pch.h"
+#include <WinSDKVer.h>
+#define _WIN32_WINNT 0x0600
+#include <SDKDDKVer.h>
+
+// Use the C++ standard templated min/max
+#define NOMINMAX
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include "d3dUtil.h"
+#include "GameTimer.h"
+#include <string>
 
 #include "StepTimer.h"
+#include <DirectXMath.h>
 
-// A basic game implementation that creates a D3D11 device and
-// provides a game loop
 class D3DApp
 {
 public:
+	D3DApp(HINSTANCE hInstance);
+	virtual ~D3DApp();
 
-	D3DApp();
+	HINSTANCE AppInst()const;
+	HWND      MainWnd()const;
+	float     AspectRatio()const;
 
-	// Initialization and management
-	void Initialize(HWND window, int width, int height);
+	int Run();
 
-	// Basic game loop
-	void Tick();
-	void Render();
+	// Framework methods.  Derived client class overrides these methods to 
+	// implement specific application requirements.
 
-	// Rendering helpers
-	void Clear();
+	virtual bool Init();
+	virtual void OnResize();
+	virtual void UpdateScene(float dt) = 0;
+	virtual void DrawScene() = 0;
+	virtual LRESULT MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+	// Convenience overrides for handling mouse input.
+	virtual void OnMouseDown(WPARAM btnState, int x, int y){ }
+	virtual void OnMouseUp(WPARAM btnState, int x, int y)  { }
+	virtual void OnMouseMove(WPARAM btnState, int x, int y){ }
+
+protected:
+	bool InitMainWindow();
+	bool InitDirect3D();
+
+	void CalculateFrameStats();
+
+	virtual void CreateDevice();
+	virtual void CreateResources();
+	virtual void OnDeviceLost();
+	void Clear(const FLOAT color[4] = DirectX::Colors::CornflowerBlue);
 	void Present();
 
-	// Messages
-	void OnActivated();
-	void OnDeactivated();
-	void OnSuspending();
-	void OnResuming();
-	void OnWindowSizeChanged(int width, int height);
+protected:
 
-	// Properites
-	void GetDefaultSize(int& width, int& height) const;
+	HINSTANCE mhAppInst;
+	HWND      mhMainWnd;
+	bool      mAppPaused;
+	bool      mMinimized;
+	bool      mMaximized;
+	bool      mResizing;
+	UINT      m4xMsaaQuality;
 
-private:
-
-	void Update(DX::StepTimer const& timer);
-
-	void CreateDevice();
-	void CreateResources();
-
-	void OnDeviceLost();
-
-	// Application state
-	HWND                                            m_window;
-	int                                             m_outputWidth;
-	int                                             m_outputHeight;
-
-	// Direct3D Objects
-	D3D_FEATURE_LEVEL                               m_featureLevel;
-	Microsoft::WRL::ComPtr<ID3D11Device>            m_d3dDevice;
-	Microsoft::WRL::ComPtr<ID3D11Device1>           m_d3dDevice1;
-	Microsoft::WRL::ComPtr<ID3D11DeviceContext>     m_d3dContext;
-	Microsoft::WRL::ComPtr<ID3D11DeviceContext1>    m_d3dContext1;
-
-	// Rendering resources
-	Microsoft::WRL::ComPtr<IDXGISwapChain>          m_swapChain;
-	Microsoft::WRL::ComPtr<IDXGISwapChain1>         m_swapChain1;
-	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_renderTargetView;
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  m_depthStencilView;
-	Microsoft::WRL::ComPtr<ID3D11Texture2D>         m_depthStencil;
-
+	GameTimer mTimer;
 	// Game state
 	DX::StepTimer                                   m_timer;
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_texture;
+	D3D_FEATURE_LEVEL                               mFeatureLevel;
+	Microsoft::WRL::ComPtr<ID3D11Device>            md3dDevice;
+	Microsoft::WRL::ComPtr<ID3D11Device1>			md3dDevice1;
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext>     md3dImmediateContext;
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext1>    md3dImmediateContext1;
 
-	std::unique_ptr<DirectX::SpriteBatch> m_spriteBatch;
-	DirectX::SimpleMath::Vector2 m_screenPos;
-	DirectX::SimpleMath::Vector2 m_origin;
+	// Rendering resources
+	Microsoft::WRL::ComPtr<IDXGISwapChain>          mSwapChain;
+	Microsoft::WRL::ComPtr<IDXGISwapChain1>         mSwapChain1;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  mRenderTargetView;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  mDepthStencilView;
+	Microsoft::WRL::ComPtr<ID3D11Texture2D>         mDepthStencil;
+	//ID3D11Device* md3dDevice;
+	//ID3D11DeviceContext* md3dImmediateContext;
+	//IDXGISwapChain* mSwapChain;
+	//ID3D11Texture2D* mDepthStencilBuffer;
+	//ID3D11RenderTargetView* mRenderTargetView;
+	//ID3D11DepthStencilView* mDepthStencilView;
+	//D3D11_VIEWPORT mScreenViewport;
 
-	std::unique_ptr<DirectX::CommonStates> m_states;
-	RECT m_tileRect;
-
-	RECT m_fullscreenRect;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_background;
+	// Derived class should set these in derived constructor to customize starting values.
+	std::wstring mMainWndCaption;
+	D3D_DRIVER_TYPE md3dDriverType;
+	int mClientWidth;
+	int mClientHeight;
+	bool mEnable4xMsaa;
 };
+
 #endif // D3DAPP_H
